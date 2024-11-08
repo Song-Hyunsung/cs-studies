@@ -19,5 +19,8 @@
             <version>8.0.30</version>
         </dependency>
     </dependencies>
-
+    <properties>
+	  <sonar.organization>song-hyunsung</sonar.organization>
+	  <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    </properties>
 </project>
