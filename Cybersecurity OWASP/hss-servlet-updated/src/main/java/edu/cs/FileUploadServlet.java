@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -22,8 +25,8 @@ import javax.servlet.http.Part;
 
 @WebServlet("/FileUploadServlet")
 @MultipartConfig(fileSizeThreshold=1024*1024*10, // 10 MB, sets the threshold where file larger than 10MB will be stored on disk instead of memory
-               maxFileSize=1024*1024*50,      	// 50 MB, maximum allowed size for each file, bigger than this will throw error
-               maxRequestSize=1024*1024*100)   	// 100 MB, maximum allowed size for the entire request, including form fields and files
+                 maxFileSize=255,    	// 255 Byte, maximum allowed size for each file, bigger than this will throw error to match TINYBLOB
+                 maxRequestSize=1024*1024*100)   	// 100 MB, maximum allowed size for the entire request, including form fields and files
 public class FileUploadServlet extends HttpServlet {
 
   private static final long serialVersionUID = 205242440643911308L; // TODO - find out more, required since it extends Serializable class
@@ -58,50 +61,71 @@ public class FileUploadServlet extends HttpServlet {
       }
     
     String message = "Result";
-    String content = new Scanner(new File(uploadFilePath + File.separator + fileName)).useDelimiter("\\Z").next(); 
+    String content = new Scanner(new File(uploadFilePath + File.separator + fileName)).useDelimiter("\\Z").next();
     
-    String jdbcURL = "jdbc:mysql://localhost:3306/db_repo?allowMultiQueries=true";
-    String dbUser = "db_user";
-    String dbPassword = "1122";
-    
-    try(Connection connection = DriverManager.getConnection(jdbcURL, dbUser, dbPassword)){
-    	String query = "INSERT INTO file_uploads (fileName, fileContent) VALUES ('" + fileName + "', '" + content + "')";
-    	
-    	try (Statement statement = connection.createStatement()) {
-    		int insertCount = statement.executeUpdate(query);
-    		if(insertCount > 0) {
-    			System.out.println("File saved into the database successfully");
-    		}
-    	}
-    } catch (Exception e) {
-    	e.printStackTrace();
+    try {
+        Context env = (Context) new InitialContext().lookup("java:comp/env");
+        String jdbcURL = (String) env.lookup("DB_URL");
+        String dbUser = (String) env.lookup("DB_USER");
+        String dbPassword = (String) env.lookup("DB_PW");
+        
+        try (Connection connection = DriverManager.getConnection(jdbcURL, dbUser, dbPassword)) {
+            String query = "INSERT INTO file_uploads (fileName, fileContent) VALUES (?, ?)";
+
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                preparedStatement.setString(1, fileName);
+                preparedStatement.setString(2, content);
+
+                int insertCount = preparedStatement.executeUpdate();
+                if (insertCount > 0) {
+                    System.out.println("File saved into the database successfully");
+                }
+            }
+        } catch (Exception e) {
+        	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        	response.getWriter().write("An unexpected error occurred. Please try again later.");
+            e.printStackTrace();
+        }
+    } catch (NamingException e) {
+    	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    	response.getWriter().write("An unexpected error occurred. Please try again later.");
+        e.printStackTrace();
     }
     
-    response.setContentType("text/html");
-    response.getWriter().write(message + "<BR>" + content);
+    response.getWriter().write("File Successfully Uploaded.");
   }
   
   // Handle GET requests
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-      // Your custom logic for processing GET requests
-      String jdbcURL = "jdbc:mysql://localhost:3306/db_repo";
-      String dbUser = "db_user";
-      String dbPassword = "1122";
-
       List<FileRecord> fileRecords = new ArrayList<>();
-      try (Connection connection = DriverManager.getConnection(jdbcURL, dbUser, dbPassword)) {
-          String query = "SELECT id, fileName FROM file_uploads";
-          try (Statement statement = connection.createStatement();
-               ResultSet resultSet = statement.executeQuery(query)) {
-              while (resultSet.next()) {
-            	  Integer pid = resultSet.getInt("id");
-                  String fileName = resultSet.getString("fileName");
-                  fileRecords.add(new FileRecord(pid, fileName));
-                  System.out.println("HERE IS FILE NAME" + fileName);
-              }
-          }
-      } catch (Exception e) {
+      try {
+          Context env = (Context) new InitialContext().lookup("java:comp/env");
+          String jdbcURL = (String) env.lookup("DB_URL");
+          String dbUser = (String) env.lookup("DB_USER");
+          String dbPassword = (String) env.lookup("DB_PW");
+
+          try (Connection connection = DriverManager.getConnection(jdbcURL, dbUser, dbPassword)) {
+        	    String query = "SELECT id, fileName FROM file_uploads";
+
+        	    try (PreparedStatement preparedStatement = connection.prepareStatement(query);
+        	         ResultSet resultSet = preparedStatement.executeQuery()) {
+
+        	        while (resultSet.next()) {
+        	            Integer pid = resultSet.getInt("id");
+        	            String fileName = resultSet.getString("fileName");
+
+        	            fileRecords.add(new FileRecord(pid, fileName));
+        	        }
+        	    }
+        	} catch (Exception e) {
+            	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            	response.getWriter().write("An unexpected error occurred. Please try again later.");
+        	    e.printStackTrace();
+        	}
+      } catch (NamingException e) {
+    	  response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+	      response.getWriter().write("An unexpected error occurred. Please try again later.");
           e.printStackTrace();
       }
 

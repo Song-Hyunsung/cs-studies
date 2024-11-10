@@ -1,0 +1,74 @@
+# Target directory (Maven build output)
+target/
+
+# Maven specific files
+.log
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse specific files
+.classpath
+.project
+.settings/
+
+# IntelliJ IDEA specific files
+.idea/
+*.iml
+*.iws
+out/
+
+# NetBeans specific files
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# VS Code specific files
+.vscode/
+
+# macOS specific files
+.DS_Store
+
+# Windows specific files
+Thumbs.db
+ehthumbs.db
+
+# Linux specific files
+*~
+
+# Log files
+*.log
+
+# Temporary files
+*.temp
+*.tmp
+
+# JetBrains specific files
+.idea/
+*.iml
+*.iws
+
+# Tomcat and server specific files
+*.war
+*.ear
+
+# Exclude sensitive information
+**/src/main/resources/config.properties
+
+# Ignore generated documentation
+/target/site
+
+# Ignore Maven wrapper files if not needed
+/.mvn/
+mvnw
+mvnw.cmd
+
+# IntelliJ IDEA specific files
+.idea/
+*.iml
+*.iws
+out/

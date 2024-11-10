@@ -1,0 +1,5 @@
+<Context>
+    <Environment name="DB_URL" value="jdbc:mysql://localhost:3306/db_repo?allowMultiQueries=true" type="java.lang.String" override="true"/>
+    <Environment name="DB_USER" value="db_user" type="java.lang.String" override="true"/>
+    <Environment name="DB_PW" value="1122" type="java.lang.String" override="true"/>
+</Context>

@@ -43,9 +43,9 @@ public class FileContentServlet extends HttpServlet {
 		      } catch (Exception e) {
 		          e.printStackTrace();
 		      }
+		} else {
+			RequestDispatcher dispatcher = request.getRequestDispatcher("/fileContent.jsp");
+			dispatcher.forward(request, response);
 		}
-		
-		RequestDispatcher dispatcher = request.getRequestDispatcher("/fileContent.jsp");
-		dispatcher.forward(request, response);
 	}
 }

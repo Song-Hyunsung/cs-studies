@@ -12,7 +12,7 @@
         String fileContent = (String) request.getAttribute("fileContent");
         if (fileContent != null && !fileContent.isEmpty()) {
     %>
-        <pre><%= fileContent %></pre>
+        <pre>${fileContent}</pre>
     <%
         } else {
     %>
