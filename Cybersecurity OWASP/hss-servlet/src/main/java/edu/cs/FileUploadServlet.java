@@ -6,6 +6,10 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import javax.servlet.ServletException;
@@ -52,29 +56,19 @@ public class FileUploadServlet extends HttpServlet {
           part.write(uploadFilePath + File.separator + fileName);
           System.out.println("File Name: " + fileName + " was written to " + uploadFilePath);
       }
-
+    
     String message = "Result";
-    String content = new Scanner(new File(uploadFilePath + File.separator + fileName)).useDelimiter("\\Z").next();      
-    response.setContentType("text/html");
-    response.getWriter().write(message + "<BR>" + content);
-    try {
-		Class.forName("com.mysql.cj.jdbc.Driver");
-	} catch (ClassNotFoundException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
+    String content = new Scanner(new File(uploadFilePath + File.separator + fileName)).useDelimiter("\\Z").next(); 
+    
     String jdbcURL = "jdbc:mysql://localhost:3306/db_repo";
     String dbUser = "db_user";
     String dbPassword = "1122";
     
     try(Connection connection = DriverManager.getConnection(jdbcURL, dbUser, dbPassword)){
-    	String query = "INSERT INTO file_uploads (fileName, fileContent) VALUES (?, ?)";
+    	String query = "INSERT INTO file_uploads (fileName, fileContent) VALUES ('" + fileName + "', '" + content + "')";
     	
-    	try(PreparedStatement statement = connection.prepareStatement(query)){
-    		statement.setString(1,  fileName);
-    		statement.setBytes(2,  content.getBytes());
-    		
-    		int insertCount = statement.executeUpdate();
+    	try (Statement statement = connection.createStatement()) {
+    		int insertCount = statement.executeUpdate(query);
     		if(insertCount > 0) {
     			System.out.println("File saved into the database successfully");
     		}
@@ -83,6 +77,37 @@ public class FileUploadServlet extends HttpServlet {
     	e.printStackTrace();
     }
     
+    response.setContentType("text/html");
+    response.getWriter().write(message + "<BR>" + content);
+  }
+  
+  // Handle GET requests
+  @Override
+  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+      // Your custom logic for processing GET requests
+      String jdbcURL = "jdbc:mysql://localhost:3306/db_repo";
+      String dbUser = "db_user";
+      String dbPassword = "1122";
+
+      List<FileRecord> fileRecords = new ArrayList<>();
+      try (Connection connection = DriverManager.getConnection(jdbcURL, dbUser, dbPassword)) {
+          String query = "SELECT id, fileName FROM file_uploads";
+          try (Statement statement = connection.createStatement();
+               ResultSet resultSet = statement.executeQuery(query)) {
+              while (resultSet.next()) {
+            	  Integer pid = resultSet.getInt("id");
+                  String fileName = resultSet.getString("fileName");
+                  fileRecords.add(new FileRecord(pid, fileName));
+                  System.out.println("HERE IS FILE NAME" + fileName);
+              }
+          }
+      } catch (Exception e) {
+          e.printStackTrace();
+      }
+
+      // Set the records as a request attribute and forward to index.jsp
+      request.setAttribute("fileRecords", fileRecords);
+      request.getRequestDispatcher("/index.jsp").forward(request, response);
   }
 
   /**
@@ -99,19 +124,4 @@ public class FileUploadServlet extends HttpServlet {
       }
       return "";
   }
-  
-  
-	private void writeToResponse(HttpServletResponse resp, String results) throws IOException {
-		PrintWriter writer = new PrintWriter(resp.getOutputStream());
-		resp.setContentType("text/plain");
-
-		if (results.isEmpty()) {
-			writer.write("No results found.");
-		} else {
-			writer.write(results);
-		}
-		writer.close();
-	}	
-	
-	
 }
